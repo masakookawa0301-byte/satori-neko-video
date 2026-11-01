@@ -9,7 +9,11 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { INK, PAPER } from "../neko/ink";
+import { hasArt, ImageAgeru, ImageGassho, ImageKoromo, ImageKuu } from "./imageShots";
 import { BITE_FRAME, SceneAgeru, SceneGassho, SceneKoromo, SceneKuu } from "./scenes";
+
+// ② で煩悩が油に落ちるフレーム（場面の頭から）
+const DROP_FRAME = 50;
 
 const { fontFamily } = loadFont("normal", {
   weights: ["500"],
@@ -91,21 +95,21 @@ const Caption: React.FC<{ text: string }> = ({ text }) => {
 
 export const BonnouTempura: React.FC = () => {
   const frame = useCurrentFrame();
-  const juwaStart = SCENES.ageru[0] + 50 / FPS; // ② で油に落ちる瞬間
+  const juwaStart = SCENES.ageru[0] + DROP_FRAME / FPS; // ② で油に落ちる瞬間
 
   return (
     <AbsoluteFill style={{ backgroundColor: PAPER }}>
       <Scene range={SCENES.koromo} first name="① 衣">
-        <SceneKoromo />
+        {hasArt("koromo") ? <ImageKoromo /> : <SceneKoromo />}
       </Scene>
       <Scene range={SCENES.ageru} name="② 揚げる">
-        <SceneAgeru />
+        {hasArt("ageru") ? <ImageAgeru dropAt={DROP_FRAME} /> : <SceneAgeru />}
       </Scene>
       <Scene range={SCENES.gassho} name="③ 合掌">
-        <SceneGassho />
+        {hasArt("gassho") ? <ImageGassho /> : <SceneGassho />}
       </Scene>
       <Scene range={SCENES.kuu} name="④ 食べる">
-        <SceneKuu />
+        {hasArt("mae") && hasArt("ato") ? <ImageKuu biteAt={BITE_FRAME} /> : <SceneKuu />}
       </Scene>
 
       <Sequence from={s(CAPTION_AT)} name="字幕">

@@ -10,7 +10,7 @@
 |---|---|
 | `src/` | 動画のコード。`Root.tsx` に動画を登録する |
 | `src/neko/` | コードで描いたさとりねこ（`SatoriNeko.tsx`）と煩悩・墨・和紙（`ink.tsx`）。`NekoSheet` で造形を確認できる |
-| `src/tempura/` | 第1話「煩悩の天ぷら」の場面と効果 |
+| `src/tempura/` | 第1話「煩悩の天ぷら」の場面と効果。`public/images/tempura/` に生成画像（`koromo` `ageru` `gassho` `mae` `ato` の .png、縦長9:16）を置くと、その場面だけ自動で画像に切り替わる。無い場面はコードの絵のまま |
 | `scripts/make_sounds.py` | BGM・効果音をプログラムで合成し `public/audio/` に書き出す（外部音源なし） |
 | `public/images/` | 動画で使う画像（satori-neko から承認済みの画像をコピー） |
 | `素材/` | 元素材の置き場（使う前の画像など） |
