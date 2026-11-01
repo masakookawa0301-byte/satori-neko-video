@@ -1,6 +1,7 @@
 import { Composition } from "remotion";
 import { GyounRyusui } from "./GyounRyusui";
 import { NekoSheet } from "./neko/NekoSheet";
+import { BonnouDiary, DIARY_DURATION } from "./diary/BonnouDiary";
 import { BonnouTempura, TEMPURA_DURATION } from "./tempura/BonnouTempura";
 
 // 縦型ショート（TikTok・YouTubeショート・リール）共通：1080×1920、30fps
@@ -21,6 +22,7 @@ export const RemotionRoot: React.FC = () => {
         durationInFrames={TEMPURA_DURATION}
         {...SHORT}
       />
+      <Composition id="BonnouDiary" component={BonnouDiary} durationInFrames={DIARY_DURATION} {...SHORT} />
       <Composition id="NekoSheet" component={NekoSheet} durationInFrames={30} {...SHORT} />
     </>
   );

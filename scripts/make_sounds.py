@@ -184,7 +184,54 @@ def poto():
     return fade(np.sin(2 * np.pi * np.cumsum(f) / SR) * env_ad(m, 0.002, 0.04))
 
 
+def kachi():
+    """箸が器に当たる「かちっ」：木の短い響き"""
+    m = int(SR * 0.25)
+    tt = np.arange(m) / SR
+    tone = (np.sin(2 * np.pi * 1850 * tt) * 0.6 + np.sin(2 * np.pi * 3120 * tt) * 0.3) * np.exp(-tt / 0.03)
+    click = band_noise(0.25, 1500, 6000) * np.exp(-tt / 0.004) * 0.5
+    return fade(tone + click, 0.0005, 0.05)
+
+
+def pochi():
+    """干し柿をそっとつまむ「ぷち」"""
+    m = int(SR * 0.2)
+    tt = np.arange(m) / SR
+    f = 380 * np.exp(-tt * 25) + 140
+    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * env_ad(m, 0.002, 0.03)
+    return fade(body + band_noise(0.2, 800, 3000) * env_ad(m, 0.001, 0.006) * 0.4)
+
+
+def pon():
+    """みかんの「ぽん」：中が空洞っぽい軽い音"""
+    m = int(SR * 0.35)
+    tt = np.arange(m) / SR
+    f = 520 * np.exp(-tt * 9) + 220
+    return fade(np.sin(2 * np.pi * np.cumsum(f) / SR) * env_ad(m, 0.003, 0.08))
+
+
+def fuwa(sec=0.9):
+    """場面転換の「ふわっ」：やわらかい風"""
+    n = int(SR * sec)
+    t = np.arange(n) / SR
+    env = np.sin(np.pi * np.clip(t / sec, 0, 1)) ** 2
+    return fade(band_noise(sec, 300, 2500, tilt=1.2) * env, 0.01, 0.1)
+
+
+def suu(sec=3.6):
+    """寝息「すぅ…」を2回"""
+    n = int(SR * sec)
+    t = np.arange(n) / SR
+    env = np.clip(np.sin(2 * np.pi * t / 1.8), 0, 1) ** 2
+    return fade(band_noise(sec, 250, 1400, tilt=1.6) * env, 0.05, 0.4)
+
+
 if __name__ == "__main__":
+    save("kachi.wav", kachi(), peak=0.7)
+    save("pochi.wav", pochi(), peak=0.6)
+    save("pon.wav", pon(), peak=0.65)
+    save("fuwa.wav", fuwa(), peak=0.5, stereo_width=0.6)
+    save("suu.wav", suu(), peak=0.45, stereo_width=0.4)
     save("bgm.wav", bgm(), peak=0.55, stereo_width=0.6)
     save("torori.wav", torori(), peak=0.7)
     save("poto.wav", poto(), peak=0.6)
