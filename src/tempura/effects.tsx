@@ -1,10 +1,12 @@
 import { AbsoluteFill, interpolate, random, useCurrentFrame } from "remotion";
 
 // 薄墨の湯気：ぼかした筋がゆらぎながら上がって消える
-export const Steam: React.FC<{ x: number; y: number; count?: number }> = ({
+export const Steam: React.FC<{ x: number; y: number; count?: number; color?: string; height?: number }> = ({
   x,
   y,
   count = 3,
+  color = "rgba(120,110,100,0.9)",
+  height = 260,
 }) => {
   const frame = useCurrentFrame();
   return (
@@ -13,9 +15,9 @@ export const Steam: React.FC<{ x: number; y: number; count?: number }> = ({
         const period = 70 + random(`steam-p-${i}`) * 30;
         const offset = random(`steam-o-${i}`) * period;
         const t = ((frame + offset) % period) / period;
-        const rise = t * 260;
+        const rise = t * height;
         const sway = Math.sin((frame + offset) / 14) * 18;
-        const opacity = interpolate(t, [0, 0.25, 1], [0, 0.32, 0]);
+        const opacity = interpolate(t, [0, 0.25, 1], [0, 0.28, 0]);
         return (
           <div
             key={i}
@@ -26,7 +28,7 @@ export const Steam: React.FC<{ x: number; y: number; count?: number }> = ({
               width: 34,
               height: 150,
               borderRadius: 40,
-              background: "rgba(255,255,255,0.95)",
+              background: color,
               filter: "blur(16px)",
               opacity,
             }}
