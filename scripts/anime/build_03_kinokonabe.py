@@ -23,6 +23,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 KEYS, NAKA, STILLS, CUT09, OUT = sys.argv[1:6]
+WAN = sys.argv[6] if len(sys.argv) > 6 else None  # wan_stills.zip を展開したフォルダ（cutXX_frames/）
 W, H, FPS = 1280, 720, 24
 AUDIO = os.path.join(os.path.dirname(__file__), "..", "..", "public", "audio")
 FONT = "/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc"
@@ -82,6 +83,34 @@ def still(name, sec, z0=1.0, z1=1.06, cx=0.5, cy=0.5, dx=0.0, dy=0.0):
     return out
 
 
+def moving_still(name, sec, mode="boomerang", maxf=None, zoom=1.0, zx=0.5, **kw):
+    """止め絵カット：Wanで動かした動画があればそれを使い、なければズームだけ"""
+    fs = sorted(glob.glob(f"{WAN}/{name}_frames/*.png")) if WAN else []
+    if not fs:
+        return still(name, sec, **kw)
+    fs = fs[:maxf] if maxf else fs  # 後半で崩れるカットは前半だけ使う
+    n = int(sec * FPS)
+    idx = list(range(len(fs)))
+    while len(idx) < n:
+        if mode == "boomerang":  # 湯気・草など行ったり来たりしてよい動き
+            back = list(range(len(fs) - 2, 0, -1))
+            idx += back + list(range(len(fs)))
+        else:  # 歩くなど戻れない動き：最後のコマで止める
+            idx += [len(fs) - 1] * (n - len(idx))
+    cache = {}
+    out = []
+    for i in idx[:n]:
+        if i not in cache:
+            im = ImageOps.fit(Image.open(fs[i]).convert("RGB"), (W, H), Image.LANCZOS)
+            if zoom > 1:  # 端に出た崩れを画面の外へ
+                cw, ch = W / zoom, H / zoom
+                x = (W - cw) * zx
+                im = im.crop((int(x), int((H - ch) / 2), int(x + cw), int((H + ch) / 2))).resize((W, H), Image.LANCZOS)
+            cache[i] = im
+        out.append(cache[i])
+    return out
+
+
 def video_frames(path):
     p = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
                        capture_output=True, check=True)
@@ -134,14 +163,14 @@ add(title, None, [(0.1, "rin.wav", 0.5)])
 add(lambda: seq("cut01", [("K1", 24), (9, 4), ("K2", 46)]),
     "どうしても…食べたい…！", [(1.15, "torori.wav", 0.6)])
 # ② 山へ
-add(lambda: still("cut02", 2.6, 1.08, 1.0), "秋の山へ、きのこ探し…")
+add(lambda: moving_still("cut02", 2.6, "hold"), "秋の山へ、きのこ探し…")
 # ③ どっさり
-add(lambda: still("cut03", 2.4, 1.0, 1.08, cy=0.4), "煩悩、どっさり。", [(0.3, "pochi.wav", 0.5)])
+add(lambda: moving_still("cut03", 2.4), "煩悩、どっさり。", [(0.3, "pochi.wav", 0.5)])
 # ④ はちまき
 add(lambda: seq("cut04", [("K1", 22), (3, 2), (4, 2), (6, 2), ("K2", 30)]),
     "さあ、煩悩を仕込むぞ！", [(0.95, "kachi.wav", 0.8)])
 # ⑤ 包丁を構える
-add(lambda: still("cut05", 2.0, 1.0, 1.05, cy=0.45), "心を、研ぎすまし…")
+add(lambda: moving_still("cut05", 2.0, maxf=25), "心を、研ぎすまし…")
 # ⑥ 石づきを落とす
 add(lambda: seq("cut06", [("K1", 14), (3, 2), (5, 2), (8, 2), (11, 2), ("K2", 28)]),
     "石づきを落とし…", [(0.62, "saku.wav", 0.8), (0.95, "poto.wav", 0.7)])
@@ -149,7 +178,7 @@ add(lambda: seq("cut06", [("K1", 14), (3, 2), (5, 2), (8, 2), (11, 2), ("K2", 28
 add(lambda: seq("cut07", [("K1", 16), (8, 2), (12, 2), ("K2", 34)]),
     "ほぐしていく…！", [(0.67, "saku.wav", 0.45)])
 # ⑧ エリンギ
-add(lambda: still("cut08", 2.0, 1.04, 1.0, cx=0.55, dx=-0.2), "ひとつひとつ、ていねいに。")
+add(lambda: moving_still("cut08", 2.0, maxf=21), "ひとつひとつ、ていねいに。")
 # ⑨ 切る（完成済み。音も込み）
 add(lambda: video_frames(CUT09), "とん、とん、とん。")
 # ⑩ つまみ食い
@@ -160,16 +189,16 @@ add(lambda: seq("cut10", [("K1", 14), (6, 2), (11, 2), ("K2", 18), (20, 3), (24,
 add(lambda: seq("cut11", [("K1", 6), (6, 3), (11, 3), ("K2", 6), (11, 3), (6, 3), ("K1", 6), (6, 3), (11, 3), ("K2", 24)]),
     "煩悩が、暴走…！", [(0.0, "fuwa.wav", 0.6), (1.1, "fuwa.wav", 0.5)])
 # ⑫ 鍋へ
-add(lambda: still("cut12", 2.2, 1.0, 1.05, cx=0.6), "ぜんぶ、鍋へ。", [(1.2, "kachi.wav", 0.5)])
+add(lambda: moving_still("cut12", 2.2, zoom=1.12, zx=0.2), "ぜんぶ、鍋へ。", [(1.2, "kachi.wav", 0.5)])
 # ⑬ ぐつぐつ
-add(lambda: still("cut13", 3.0, 1.0, 1.07, cx=0.35, cy=0.55), "ぐつぐつ…", [(0.0, "juwa.wav", 0.35)])
+add(lambda: moving_still("cut13", 3.0), "ぐつぐつ…", [(0.0, "juwa.wav", 0.35)])
 # ⑭ いただきます（中割りは崩れているので、原画どうしで切り替える）
 add(lambda: seq("cut14", [("K1", 20), ("K2", 24), ("K3", 42)]),
     "いただきます…！", [(0.83, "pon.wav", 0.5)])
 # ⑮ 満腹
-add(lambda: still("cut15", 3.0, 1.0, 1.05, cx=0.4), "煩悩、満たされました。", [(0.2, "suu.wav", 0.4)])
+add(lambda: moving_still("cut15", 3.0), "煩悩、満たされました。", [(0.2, "suu.wav", 0.4)])
 # ⑯ 夕暮れ
-add(lambda: still("cut16", 4.5, 1.06, 1.0, cy=0.4), "本日の煩悩、完食。", [(0.4, "rin.wav", 0.55)])
+add(lambda: moving_still("cut16", 4.5), "本日の煩悩、完食。", [(0.4, "rin.wav", 0.55)])
 
 # ---- 映像を組み立て（1カットずつ書き出す）----
 tmpv = OUT + ".video.mp4"
