@@ -12,7 +12,7 @@ W='/content/batch'; shutil.rmtree(W,ignore_errors=True)
 subprocess.run(f'git clone -q --depth 1 -b anime-work https://github.com/masakookawa0301-byte/satori-neko-video {W}',shell=True,check=True)
 DONE=set(os.listdir('/content/out')) if os.path.exists('/content/out') else set()
 cuts={}
-for d,_,fs in os.walk(W):
+for d,_,fs in os.walk(f'{W}/anime_work/03_kinokonabe'):  # 原画フォルダだけを見る（完成済みの⑨などは対象外）
     name=os.path.basename(d)
     if not re.fullmatch(r'cut\d\d',name): continue
     imgs=sorted([f for f in fs if f.lower().endswith(('.png','.jpg','.jpeg')) and not f.startswith('._')])
