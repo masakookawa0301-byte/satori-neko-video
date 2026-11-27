@@ -24,6 +24,10 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 KEYS, NAKA, STILLS, CUT09, OUT = sys.argv[1:6]
 WAN = sys.argv[6] if len(sys.argv) > 6 else None  # wan_stills.zip を展開したフォルダ（cutXX_frames/）
+UP = sys.argv[7] if len(sys.argv) > 7 else None  # 高画質化したコマ（UP/nk/cutXX_frames, UP/wanall/cutXX_frames）
+if UP:
+    NAKA = f"{UP}/nk"
+    WAN = f"{UP}/wanall" if WAN else None
 W, H, FPS = 1280, 720, 24
 AUDIO = os.path.join(os.path.dirname(__file__), "..", "..", "public", "audio")
 FONT = "/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc"
@@ -52,7 +56,8 @@ def mid(cut, i):
     if k not in _cache:
         f = sorted(glob.glob(f"{NAKA}/{cut}_frames/*.png"))[i - 1]
         im = to_frame(Image.open(f))
-        im = im.filter(ImageFilter.UnsharpMask(radius=2, percent=80, threshold=2))
+        if not UP:  # 高画質化していないときだけ、拡大のぼやけを少し締める
+            im = im.filter(ImageFilter.UnsharpMask(radius=2, percent=80, threshold=2))
         _cache[k] = im
     return _cache[k]
 
@@ -121,6 +126,29 @@ def video_frames(path):
     src = arr[0].reshape(-1, 3).astype(float)
     gain = (ref.mean(0) / src.mean(0)).reshape(1, 1, 3)
     return [Image.fromarray(np.clip(a * gain, 0, 255).astype(np.uint8)).crop((0, 40, 1280, 760)) for a in arr]
+
+
+# ---- 紙の質感（全カット共通・動かない）----
+def paper_texture(seed=7):
+    rng = np.random.default_rng(seed)
+    tex = np.zeros((H, W), np.float32)
+    for scale, amp in [(160, 0.025), (40, 0.018), (8, 0.012), (2, 0.010)]:
+        n = rng.standard_normal((H // scale + 2, W // scale + 2)).astype(np.float32)
+        n = np.asarray(Image.fromarray(n).resize((W + 2 * scale, H + 2 * scale), Image.BICUBIC))[:H, :W]
+        tex += n * amp
+    # 紙の繊維っぽい細い筋
+    fib = rng.standard_normal((H, W // 6)).astype(np.float32)
+    fib = np.asarray(Image.fromarray(fib).resize((W, H), Image.BILINEAR)) * 0.006
+    return np.clip(1.0 + tex + fib, 0.9, 1.06)[..., None]
+
+
+PAPER_TEX = paper_texture() if UP else None
+
+
+def apply_paper(im):
+    if PAPER_TEX is None:
+        return im
+    return Image.fromarray(np.clip(np.asarray(im, np.float32) * PAPER_TEX, 0, 255).astype(np.uint8))
 
 
 # ---- 字幕 ----
@@ -217,6 +245,7 @@ for ci, (make, text, sfx) in enumerate(cuts):
     if ci == 9:
         cut09_start = start
     for i, im in enumerate(fr):
+        im = apply_paper(im)
         if text:
             a = min(1.0, i / 5, (n - 1 - i) / 4 + 0.25)
             im = caption(im, text, alpha=max(a, 0))
